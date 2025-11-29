@@ -38,25 +38,6 @@ Simulador web interativo para autômatos de pilha (Pushdown Automaton), desenvol
 - **`e`**: Movimento vazio/épsilon (não lê nada, mas não testa se está vazio)
 - **`ε`**: Representação visual do épsilon na exibição
 
-## 📋 Exemplo de Uso
-
-**Autômato para reconhecer a^n b^n:**
-
-1. **Alfabeto de Entrada:** `a,b`
-2. **Lista de Estados:** `q0,q1,qf`
-3. **Estado Inicial:** `q0`
-4. **Estados Finais:** `qf`
-5. **Alfabeto da Pilha:** `A`
-
-**Transições:**
-- `q0 → q0`: Lido `a`, Lido pilha `e`, Gravado `A`
-- `q0 → q1`: Lido `b`, Lido pilha `A`, Gravado `e`
-- `q1 → q1`: Lido `b`, Lido pilha `A`, Gravado `e`
-- `q1 → q2`: Lido `e`, Lido pilha `e`, Gravado `e`
-- `q2 → qf`: Lido `e`, Lido pilha `e`, Gravado `e`
-
-**Teste com:** `aaabbb` (deve ser ACEITA)
-
 ## 🎯 Requisitos
 
 - Navegador web moderno (Chrome, Firefox, Edge, Safari)
