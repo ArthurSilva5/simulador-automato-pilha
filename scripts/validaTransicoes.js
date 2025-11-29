@@ -1,163 +1,168 @@
-// validaTransicoes.js
-// Cria linhas de transição, valida e salva no storage
+const validarTransicao = (estadoAtual, proximoEstado, lidoFita, lidoPilha, gravadoPilha) => {
+    if (!dadosAutomato) {
+        return { valido: false, mensagem: "Confirme os dados do autômato primeiro." };
+    }
 
-(function () {
-  const btnAdicionar = document.getElementById('adicionarTransicaoButton');
-  const corpoTabelaTransicoes = document.getElementById('corpoTabelaTransicoes');
+    if (!estadoAtual || !proximoEstado) {
+        return { valido: false, mensagem: "Estados não podem ser vazios." };
+    }
 
-  let listaDeTransicoes = lerDados(DADOS_CHAVES.TRANS) || [];
+    if (!dadosAutomato.estados.includes(estadoAtual)) {
+        return { valido: false, mensagem: `Estado atual "${estadoAtual}" não existe na lista de estados.` };
+    }
 
-  // renderiza transições já salvas
-  function renderizarTransicoesSalvas() {
-    corpoTabelaTransicoes.innerHTML = '';
-    listaDeTransicoes.forEach((tr, idx) => {
-      const linha = criarLinhaTransicaoComValores(tr, true, idx);
-      corpoTabelaTransicoes.appendChild(linha);
+    if (!dadosAutomato.estados.includes(proximoEstado)) {
+        return { valido: false, mensagem: `Próximo estado "${proximoEstado}" não existe na lista de estados.` };
+    }
+
+    const lidoFitaEhTesteVazio = lidoFita === "?";
+    const lidoFitaEhMovimentoVazio = lidoFita === "e";
+    const lidoFitaEhVazio = lidoFita === "";
+    const lidoFitaEhSimboloValido = dadosAutomato.alfabetoEntrada.includes(lidoFita);
+    
+    if (!lidoFitaEhTesteVazio && !lidoFitaEhMovimentoVazio && !lidoFitaEhVazio && !lidoFitaEhSimboloValido) {
+        return { valido: false, mensagem: `Símbolo "${lidoFita}" não pertence ao alfabeto de entrada.` };
+    }
+
+    const lidoPilhaEhTesteVazio = lidoPilha === "?";
+    const lidoPilhaEhMovimentoVazio = lidoPilha === "e";
+    const lidoPilhaEhVazio = lidoPilha === "";
+    const lidoPilhaEhSimboloValido = dadosAutomato.alfabetoPilha.includes(lidoPilha);
+    
+    if (!lidoPilhaEhTesteVazio && !lidoPilhaEhMovimentoVazio && !lidoPilhaEhVazio && !lidoPilhaEhSimboloValido) {
+        return { valido: false, mensagem: `Símbolo "${lidoPilha}" não pertence ao alfabeto da pilha.` };
+    }
+
+    if (!gravadoPilha || gravadoPilha.trim() === "") {
+        return { valido: false, mensagem: "O campo 'Gravado na pilha' não pode estar vazio. Use 'e' para épsilon." };
+    }
+
+    const gravadoPilhaEhEpsilon = gravadoPilha === "e";
+    if (!gravadoPilhaEhEpsilon) {
+        for (const simbolo of gravadoPilha) {
+            if (!dadosAutomato.alfabetoPilha.includes(simbolo)) {
+                return { valido: false, mensagem: `Símbolo "${simbolo}" em 'Gravado na pilha' não pertence ao alfabeto da pilha.` };
+            }
+        }
+    }
+
+    return { valido: true };
+};
+
+const adicionarTransicao = () => {
+    if (execucao !== null) {
+        alert("Não é possível adicionar transições durante a execução. Use o botão Resetar para reiniciar.");
+        return;
+    }
+    if (!dadosAutomato) {
+        alert("Confirme os dados do autômato primeiro.");
+        return;
+    }
+
+    const estadoAtual = document.getElementById("transEstadoAtual").value.trim();
+    const proximoEstado = document.getElementById("transProximoEstado").value.trim();
+    const lidoFita = document.getElementById("transLidoFita").value.trim();
+    const lidoPilha = document.getElementById("transLidoPilha").value.trim();
+    const gravadoPilha = document.getElementById("transGravadoPilha").value.trim();
+
+    const validacao = validarTransicao(estadoAtual, proximoEstado, lidoFita, lidoPilha, gravadoPilha);
+    if (!validacao.valido) {
+        alert(validacao.mensagem);
+        return;
+    }
+
+    const lidoFitaFormatado = lidoFita === "" ? "?" : lidoFita;
+    const lidoPilhaFormatado = lidoPilha === "" ? "?" : lidoPilha;
+
+    const transicao = {
+        estadoAtual: estadoAtual,
+        proximoEstado: proximoEstado,
+        lidoFita: lidoFitaFormatado,
+        lidoPilha: lidoPilhaFormatado,
+        gravadoPilha: gravadoPilha
+    };
+
+    listaTransicoes.push(transicao);
+    atualizarTabelaTransicoes();
+
+    document.getElementById("transEstadoAtual").value = "";
+    document.getElementById("transProximoEstado").value = "";
+    document.getElementById("transLidoFita").value = "";
+    document.getElementById("transLidoPilha").value = "";
+    document.getElementById("transGravadoPilha").value = "";
+};
+
+const atualizarTabelaTransicoes = () => {
+    const tbody = document.getElementById("tabelaTransicoes");
+    tbody.innerHTML = "";
+
+    if (listaTransicoes.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = '<td colspan="5" class="text-center text-muted">Nenhuma transição adicionada</td>';
+        tbody.appendChild(tr);
+        return;
+    }
+
+    listaTransicoes.forEach((transicao, index) => {
+        const tr = document.createElement("tr");
+        const execucaoEmAndamento = execucao !== null;
+        const botaoDesabilitado = execucaoEmAndamento ? "disabled" : "";
+        
+        let lidoFitaExibido = "";
+        if (transicao.lidoFita === "?") {
+            lidoFitaExibido = "?";
+        } else if (transicao.lidoFita === "e") {
+            lidoFitaExibido = "ε";
+        } else {
+            lidoFitaExibido = transicao.lidoFita;
+        }
+        
+        let lidoPilhaExibido = "";
+        if (transicao.lidoPilha === "?") {
+            lidoPilhaExibido = "?";
+        } else if (transicao.lidoPilha === "e") {
+            lidoPilhaExibido = "ε";
+        } else {
+            lidoPilhaExibido = transicao.lidoPilha;
+        }
+        
+        const gravadoPilhaExibido = transicao.gravadoPilha === "e" ? "ε" : transicao.gravadoPilha;
+        
+        tr.innerHTML = `
+            <td>${transicao.estadoAtual}</td>
+            <td>${transicao.proximoEstado}</td>
+            <td>${lidoFitaExibido}</td>
+            <td>${lidoPilhaExibido}</td>
+            <td>
+                ${gravadoPilhaExibido}
+                <button class="btn btn-sm btn-danger float-end" onclick="removerTransicao(${index})" ${botaoDesabilitado}>Remover</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
-  }
-  renderizarTransicoesSalvas();
+};
 
-  btnAdicionar.addEventListener('click', (e) => {
-    e.preventDefault();
-    adicionarLinhaTransicao();
-  });
+const removerTransicao = (indice) => {
+    if (execucao !== null) {
+        alert("Não é possível remover transições durante a execução. Use o botão Resetar para reiniciar.");
+        return;
+    }
+    if (indice >= 0 && indice < listaTransicoes.length) {
+        listaTransicoes.splice(indice, 1);
+        atualizarTabelaTransicoes();
+    }
+};
 
-  function adicionarLinhaTransicao() {
-    const novaLinha = document.createElement('tr');
-    const campos = ['estadoAtual', 'proximoEstado', 'simboloEntrada', 'simboloPilha', 'simbolosPilha'];
-
-    campos.forEach(campo => {
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.classList.add('form-control', 'form-control-sm');
-      input.dataset.campo = campo;
-
-      if (campo === 'simboloEntrada') input.placeholder = "símbolo (ou '?' para vazio, ou e para ε)";
-      else if (campo === 'simboloPilha') input.placeholder = "símbolo da pilha (ou '?' para vazio, ou e para ε)";
-      else if (campo === 'simbolosPilha') input.placeholder = "ex: A, AB ou e (ε)";
-      else input.placeholder = campo;
-
-      td.appendChild(input);
-      novaLinha.appendChild(td);
-    });
-
-    const tdSalvar = document.createElement('td');
-    const btnSalvar = document.createElement('button');
-    btnSalvar.textContent = 'Salvar';
-    btnSalvar.type = 'button';
-    btnSalvar.classList.add('btn', 'btn-sm', 'btn-primary');
-    btnSalvar.addEventListener('click', () => salvarTransicao(novaLinha));
-    tdSalvar.appendChild(btnSalvar);
-
-    const tdRemover = document.createElement('td');
-    const btnRemover = document.createElement('button');
-    btnRemover.textContent = 'Remover';
-    btnRemover.type = 'button';
-    btnRemover.classList.add('btn', 'btn-sm', 'btn-danger');
-    btnRemover.addEventListener('click', () => novaLinha.remove());
-    tdRemover.appendChild(btnRemover);
-
-    novaLinha.appendChild(tdSalvar);
-    novaLinha.appendChild(tdRemover);
-    corpoTabelaTransicoes.appendChild(novaLinha);
-  }
-
-  function criarLinhaTransicaoComValores(tr, desativada, idx) {
-    const linha = document.createElement('tr');
-    const campos = ['estadoAtual', 'proximoEstado', 'simboloEntrada', 'simboloPilha', 'simbolosPilha'];
-    campos.forEach(campo => {
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.classList.add('form-control', 'form-control-sm');
-      input.dataset.campo = campo;
-      input.value = tr[campo] || '';
-      input.disabled = !!desativada;
-      td.appendChild(input);
-      linha.appendChild(td);
-    });
-
-    const tdSalvar = document.createElement('td');
-    const btnSalvar = document.createElement('button');
-    btnSalvar.textContent = 'Salvar';
-    btnSalvar.type = 'button';
-    btnSalvar.classList.add('btn', 'btn-sm', 'btn-primary');
-    btnSalvar.addEventListener('click', () => salvarTransicao(linha));
-    tdSalvar.appendChild(btnSalvar);
-
-    const tdRemover = document.createElement('td');
-    const btnRemover = document.createElement('button');
-    btnRemover.textContent = 'Remover';
-    btnRemover.type = 'button';
-    btnRemover.classList.add('btn', 'btn-sm', 'btn-danger');
-    btnRemover.addEventListener('click', () => {
-      linha.remove();
-      listaDeTransicoes = listaDeTransicoes.filter((_, i) => i !== idx);
-      salvarDados(DADOS_CHAVES.TRANS, listaDeTransicoes);
-    });
-    tdRemover.appendChild(btnRemover);
-
-    linha.appendChild(tdSalvar);
-    linha.appendChild(tdRemover);
-    return linha;
-  }
-
-  function salvarTransicao(linha) {
-    const dados = lerDados(DADOS_CHAVES.DADOS);
-    if (!dados) {
-      linha.style.backgroundColor = '#f8d7da';
-      alert('O autômato ainda não foi configurado. Confirme os dados iniciais.');
-      return;
+const validarTransicoesParaExecucao = () => {
+    if (!dadosAutomato) {
+        return { valido: false, mensagem: "Autômato não foi configurado." };
     }
 
-    const inputs = linha.querySelectorAll('input');
-    const transicao = {};
-    inputs.forEach(input => transicao[input.dataset.campo] = (input.value || '').trim().toLowerCase());
-
-    const resultado = validarTransicao(transicao, dados);
-    if (resultado.valida) {
-      listaDeTransicoes.push(transicao);
-      salvarDados(DADOS_CHAVES.TRANS, listaDeTransicoes);
-      linha.style.backgroundColor = '#d4edda';
-      inputs.forEach(input => input.disabled = true);
-      inputs.forEach(input => { if (input.value === 'e') input.value = 'ε'; });
-    } else {
-      linha.style.backgroundColor = '#f8d7da';
-      alert(resultado.mensagem || 'Transição inválida.');
-    }
-  }
-
-  function validarTransicao(transicao, dados) {
-    const { listaDeEstados, alfabetoDeEntrada, listaDeAlfabetoPilha } = dados;
-
-    if (!transicao.estadoAtual) return { valida: false, mensagem: 'Informe o estado atual.' };
-    if (!listaDeEstados.includes(transicao.estadoAtual)) return { valida: false, mensagem: `Estado atual inválido: '${transicao.estadoAtual}'.` };
-
-    if (!transicao.proximoEstado) return { valida: false, mensagem: 'Informe o próximo estado.' };
-    if (!listaDeEstados.includes(transicao.proximoEstado)) return { valida: false, mensagem: `Próximo estado inválido: '${transicao.proximoEstado}'.` };
-
-    const simboloEntrada = transicao.simboloEntrada;
-    // aceita '', 'e' (epsilon), '?' (vazio) ou símbolo do alfabeto
-    if (simboloEntrada !== '' && simboloEntrada !== 'e' && simboloEntrada !== '?' && !alfabetoDeEntrada.includes(simboloEntrada)) {
-      return { valida: false, mensagem: `Símbolo de entrada inválido: '${simboloEntrada}'.` };
+    if (listaTransicoes.length === 0) {
+        return { valido: false, mensagem: "Deve haver pelo menos uma transição para executar o autômato." };
     }
 
-    const simboloPilha = transicao.simboloPilha;
-    if (simboloPilha !== '' && simboloPilha !== 'e' && simboloPilha !== '?' && !listaDeAlfabetoPilha.includes(simboloPilha)) {
-      return { valida: false, mensagem: `Símbolo da pilha inválido: '${simboloPilha}'.` };
-    }
+    return { valido: true };
+};
 
-    const escrita = transicao.simbolosPilha;
-    if (escrita === '') return { valida: true, mensagem: '' };
-    if (escrita === 'e') return { valida: true, mensagem: '' };
-    // '?' não faz sentido em push
-    if (escrita.includes('?')) return { valida: false, mensagem: "O símbolo '?' não é permitido na parte de escrita da pilha." };
-
-    const simbolos = escrita.split('').filter(ch => ch !== ',');
-    for (const s of simbolos) {
-      if (!listaDeAlfabetoPilha.includes(s)) return { valida: false, mensagem: `Símbolo inválido para gravação na pilha: '${s}'.` };
-    }
-
-    return { valida: true, mensagem: '' };
-  }
-
-})();
+document.getElementById("botaoAdicionarTransicao").onclick = adicionarTransicao;
