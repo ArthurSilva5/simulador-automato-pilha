@@ -85,8 +85,9 @@ const validarEstadosFinais = (listaEstadosFinais, listaEstados) => {
 };
 
 const confirmarAutomato = () => {
-    if (execucao !== null) {
-        alert("Não é possível alterar os dados do autômato durante a execução. Use o botão Resetar para reiniciar.");
+    const execucaoEmAndamento = execucao !== null && !execucao.concluida;
+    if (execucaoEmAndamento) {
+        alert("Não é possível alterar os dados do autômato durante a execução. Aguarde a conclusão ou use o botão Reiniciar Autômato.");
         return;
     }
     

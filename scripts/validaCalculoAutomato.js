@@ -12,55 +12,63 @@ const validarSentenca = (sentenca) => {
     return { valido: true };
 };
 
+const obterEstadoAtualExecucao = () => {
+    if (!execucao) return null;
+    return {
+        estado: execucao.estado,
+        entrada: execucao.entrada,
+        pilha: execucao.pilha,
+        topoPilha: execucao.pilha.length > 0 ? execucao.pilha[execucao.pilha.length - 1] : null
+    };
+};
+
+const verificarCondicaoEntrada = (transicao, entradaAtual) => {
+    if (transicao.lidoFita === "?") return entradaAtual === "";
+    if (transicao.lidoFita === "e") return true;
+    return entradaAtual.length > 0 && entradaAtual.startsWith(transicao.lidoFita);
+};
+
+const verificarCondicaoPilha = (transicao, topoPilha) => {
+    if (transicao.lidoPilha === "?") return topoPilha === null;
+    if (transicao.lidoPilha === "e") return true;
+    return topoPilha === transicao.lidoPilha;
+};
+
 const verificarAceitacao = () => {
     if (!execucao) {
         return false;
     }
+    return execucao.entrada === "" && dadosAutomato.estadosFinais.includes(execucao.estado);
+};
 
-    const entradaEstaVazia = execucao.entrada === "";
-    const estadoAtualEhFinal = dadosAutomato.estadosFinais.includes(execucao.estado);
+const entradaFoiCompletamenteLida = () => {
+    const estado = obterEstadoAtualExecucao();
+    if (!estado || estado.entrada === "") {
+        return estado !== null && estado.entrada === "";
+    }
     
-    const sentencaFoiAceita = entradaEstaVazia && estadoAtualEhFinal;
-    return sentencaFoiAceita;
+    for (const transicao of listaTransicoes) {
+        if (transicao.estadoAtual === estado.estado && 
+            transicao.lidoFita !== "?" && transicao.lidoFita !== "e" &&
+            verificarCondicaoEntrada(transicao, estado.entrada) && 
+            verificarCondicaoPilha(transicao, estado.topoPilha)) {
+            return false;
+        }
+    }
+    
+    return true;
 };
 
 const verificarRejeicao = () => {
-    if (!execucao) {
+    if (!execucao || verificarAceitacao() || !entradaFoiCompletamenteLida()) {
         return false;
     }
 
-    if (verificarAceitacao()) {
-        return false;
-    }
-
-    const topoPilha = execucao.pilha.length > 0 ? execucao.pilha[execucao.pilha.length - 1] : null;
-
+    const estado = obterEstadoAtualExecucao();
     for (const transicao of listaTransicoes) {
-        if (transicao.estadoAtual !== execucao.estado) {
-            continue;
-        }
-
-        let condicaoEntradaSatisfeita = false;
-        if (transicao.lidoFita === "?") {
-            condicaoEntradaSatisfeita = execucao.entrada === "";
-        } else if (transicao.lidoFita === "e") {
-            condicaoEntradaSatisfeita = true;
-        } else {
-            const entradaTemSimbolo = execucao.entrada.length > 0;
-            const entradaComecaComSimbolo = execucao.entrada.startsWith(transicao.lidoFita);
-            condicaoEntradaSatisfeita = entradaTemSimbolo && entradaComecaComSimbolo;
-        }
-
-        let condicaoPilhaSatisfeita = false;
-        if (transicao.lidoPilha === "?") {
-            condicaoPilhaSatisfeita = topoPilha === null;
-        } else if (transicao.lidoPilha === "e") {
-            condicaoPilhaSatisfeita = true;
-        } else {
-            condicaoPilhaSatisfeita = topoPilha === transicao.lidoPilha;
-        }
-
-        if (condicaoEntradaSatisfeita && condicaoPilhaSatisfeita) {
+        if (transicao.estadoAtual === estado.estado &&
+            verificarCondicaoEntrada(transicao, estado.entrada) && 
+            verificarCondicaoPilha(transicao, estado.topoPilha)) {
             return false;
         }
     }
@@ -69,43 +77,39 @@ const verificarRejeicao = () => {
 };
 
 const encontrarTransicaoAplicavel = () => {
-    if (!execucao) {
+    const estado = obterEstadoAtualExecucao();
+    if (!estado) {
         return null;
     }
 
-    const topoPilha = execucao.pilha.length > 0 ? execucao.pilha[execucao.pilha.length - 1] : null;
+    const transicoesAplicaveis = listaTransicoes.filter(transicao => 
+        transicao.estadoAtual === estado.estado &&
+        verificarCondicaoEntrada(transicao, estado.entrada) &&
+        verificarCondicaoPilha(transicao, estado.topoPilha)
+    );
 
-    for (const transicao of listaTransicoes) {
-        if (transicao.estadoAtual !== execucao.estado) {
-            continue;
-        }
-
-        let condicaoEntradaSatisfeita = false;
-        if (transicao.lidoFita === "?") {
-            condicaoEntradaSatisfeita = execucao.entrada === "";
-        } else if (transicao.lidoFita === "e") {
-            condicaoEntradaSatisfeita = true;
-        } else {
-            const entradaTemSimbolo = execucao.entrada.length > 0;
-            const entradaComecaComSimbolo = execucao.entrada.startsWith(transicao.lidoFita);
-            condicaoEntradaSatisfeita = entradaTemSimbolo && entradaComecaComSimbolo;
-        }
-
-        let condicaoPilhaSatisfeita = false;
-        if (transicao.lidoPilha === "?") {
-            condicaoPilhaSatisfeita = topoPilha === null;
-        } else if (transicao.lidoPilha === "e") {
-            condicaoPilhaSatisfeita = true;
-        } else {
-            condicaoPilhaSatisfeita = topoPilha === transicao.lidoPilha;
-        }
-
-        if (condicaoEntradaSatisfeita && condicaoPilhaSatisfeita) {
-            return transicao;
-        }
+    if (transicoesAplicaveis.length === 0) {
+        return null;
     }
 
-    return null;
+    if (transicoesAplicaveis.length === 1) {
+        return transicoesAplicaveis[0];
+    }
+
+    const transicoesQueLeemSimboloEspecificoDaPilha = transicoesAplicaveis.filter(t => 
+        t.lidoPilha !== "e" && t.lidoPilha !== "?" && estado.topoPilha !== null && t.lidoPilha === estado.topoPilha
+    );
+    if (transicoesQueLeemSimboloEspecificoDaPilha.length > 0) {
+        return transicoesQueLeemSimboloEspecificoDaPilha[0];
+    }
+
+    const transicoesQueLeemDaPilha = transicoesAplicaveis.filter(t => t.lidoPilha !== "e" && t.lidoPilha !== "?");
+    if (transicoesQueLeemDaPilha.length > 0) {
+        return transicoesQueLeemDaPilha[0];
+    }
+
+    const transicoesEpsilon = transicoesAplicaveis.filter(t => t.lidoPilha === "e");
+    return transicoesEpsilon.length > 0 ? transicoesEpsilon[0] : transicoesAplicaveis[0];
 };
 
 const aplicarTransicao = (transicao) => {
@@ -113,33 +117,17 @@ const aplicarTransicao = (transicao) => {
         return;
     }
 
-    const lidoFitaEhTesteVazio = transicao.lidoFita === "?";
-    const lidoFitaEhMovimentoVazio = transicao.lidoFita === "e";
-    const deveConsumirEntrada = !lidoFitaEhTesteVazio && !lidoFitaEhMovimentoVazio;
-
-    if (deveConsumirEntrada) {
-        if (execucao.entrada.length > 0) {
-            execucao.entrada = execucao.entrada.substring(1);
-        }
+    if (transicao.lidoFita !== "?" && transicao.lidoFita !== "e" && execucao.entrada.length > 0) {
+        execucao.entrada = execucao.entrada.substring(1);
     }
 
-    const lidoPilhaEhTesteVazio = transicao.lidoPilha === "?";
-    const lidoPilhaEhMovimentoVazio = transicao.lidoPilha === "e";
-    const deveRemoverDaPilha = !lidoPilhaEhTesteVazio && !lidoPilhaEhMovimentoVazio;
-
-    if (deveRemoverDaPilha) {
-        if (execucao.pilha.length > 0) {
-            execucao.pilha.pop();
-        }
+    if (transicao.lidoPilha !== "?" && transicao.lidoPilha !== "e" && execucao.pilha.length > 0) {
+        execucao.pilha.pop();
     }
 
-    const gravadoPilhaEhEpsilon = transicao.gravadoPilha === "e";
-    const deveGravarNaPilha = !gravadoPilhaEhEpsilon;
-
-    if (deveGravarNaPilha) {
-        const simbolosParaGravar = transicao.gravadoPilha.split("");
-        const simbolosInvertidos = simbolosParaGravar.reverse();
-        for (const simbolo of simbolosInvertidos) {
+    if (transicao.gravadoPilha !== "e") {
+        const simbolosParaGravar = transicao.gravadoPilha.split("").reverse();
+        for (const simbolo of simbolosParaGravar) {
             execucao.pilha.push(simbolo);
         }
     }
@@ -147,66 +135,55 @@ const aplicarTransicao = (transicao) => {
     execucao.estado = transicao.proximoEstado;
 };
 
+const formatarSimbolo = (simbolo) => {
+    if (simbolo === "?") return "?";
+    if (simbolo === "e") return "ε";
+    return simbolo;
+};
+
 const formatarTransicao = (transicao) => {
     if (!transicao) {
         return "Nenhuma transição aplicável";
     }
 
-    let lidoFitaFormatado = "";
-    if (transicao.lidoFita === "?") {
-        lidoFitaFormatado = "?";
-    } else if (transicao.lidoFita === "e") {
-        lidoFitaFormatado = "ε";
-    } else {
-        lidoFitaFormatado = transicao.lidoFita;
-    }
+    const prefixoTentativaFalhou = transicao._tentativaFalhou ? "[TENTATIVA FALHOU] " : "";
+    const simboloLidoFitaFormatado = formatarSimbolo(transicao.lidoFita);
+    const simboloLidoPilhaFormatado = formatarSimbolo(transicao.lidoPilha);
+    const simboloGravadoPilhaFormatado = formatarSimbolo(transicao.gravadoPilha);
+    
+    return `${prefixoTentativaFalhou}(${transicao.estadoAtual} → ${transicao.proximoEstado}, lido da fita: ${simboloLidoFitaFormatado}, lido da pilha: ${simboloLidoPilhaFormatado}, gravado na pilha: ${simboloGravadoPilhaFormatado})`;
+};
 
-    let lidoPilhaFormatado = "";
-    if (transicao.lidoPilha === "?") {
-        lidoPilhaFormatado = "?";
-    } else if (transicao.lidoPilha === "e") {
-        lidoPilhaFormatado = "ε";
-    } else {
-        lidoPilhaFormatado = transicao.lidoPilha;
-    }
-
-    const gravadoPilhaFormatado = transicao.gravadoPilha === "e" ? "ε" : transicao.gravadoPilha;
-
-    return `(${transicao.estadoAtual} → ${transicao.proximoEstado}, leitura: ${lidoFitaFormatado}, lido da pilha: ${lidoPilhaFormatado}, gravado na pilha: ${gravadoPilhaFormatado})`;
+const alterarEstadoCampos = (ids, desabilitado) => {
+    ids.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.disabled = desabilitado;
+    });
 };
 
 const bloquearCamposAutomato = () => {
-    document.getElementById("entradaAlfabeto").disabled = true;
-    document.getElementById("listaEstados").disabled = true;
-    document.getElementById("estadoInicial").disabled = true;
-    document.getElementById("listaEstadosFinais").disabled = true;
-    document.getElementById("alfabetoPilha").disabled = true;
-    document.getElementById("botaoConfirmarAutomato").disabled = true;
-    document.getElementById("transEstadoAtual").disabled = true;
-    document.getElementById("transProximoEstado").disabled = true;
-    document.getElementById("transLidoFita").disabled = true;
-    document.getElementById("transLidoPilha").disabled = true;
-    document.getElementById("transGravadoPilha").disabled = true;
-    document.getElementById("botaoAdicionarTransicao").disabled = true;
-    document.getElementById("entradaSentenca").disabled = true;
-    document.getElementById("botaoIniciarExecucao").disabled = true;
+    alterarEstadoCampos([
+        "entradaAlfabeto", "listaEstados", "estadoInicial", "listaEstadosFinais", "alfabetoPilha",
+        "botaoConfirmarAutomato", "transEstadoAtual", "transProximoEstado", "transLidoFita",
+        "transLidoPilha", "transGravadoPilha", "botaoAdicionarTransicao", "entradaSentenca",
+        "botaoIniciarExecucao"
+    ], true);
+};
+
+const desbloquearCamposAposExecucao = () => {
+    alterarEstadoCampos([
+        "transEstadoAtual", "transProximoEstado", "transLidoFita", "transLidoPilha",
+        "transGravadoPilha", "botaoAdicionarTransicao", "entradaSentenca", "botaoIniciarExecucao"
+    ], false);
 };
 
 const desbloquearCamposAutomato = () => {
-    document.getElementById("entradaAlfabeto").disabled = false;
-    document.getElementById("listaEstados").disabled = false;
-    document.getElementById("estadoInicial").disabled = false;
-    document.getElementById("listaEstadosFinais").disabled = false;
-    document.getElementById("alfabetoPilha").disabled = false;
-    document.getElementById("botaoConfirmarAutomato").disabled = false;
-    document.getElementById("transEstadoAtual").disabled = false;
-    document.getElementById("transProximoEstado").disabled = false;
-    document.getElementById("transLidoFita").disabled = false;
-    document.getElementById("transLidoPilha").disabled = false;
-    document.getElementById("transGravadoPilha").disabled = false;
-    document.getElementById("botaoAdicionarTransicao").disabled = false;
-    document.getElementById("entradaSentenca").disabled = false;
-    document.getElementById("botaoIniciarExecucao").disabled = false;
+    alterarEstadoCampos([
+        "entradaAlfabeto", "listaEstados", "estadoInicial", "listaEstadosFinais", "alfabetoPilha",
+        "botaoConfirmarAutomato", "transEstadoAtual", "transProximoEstado", "transLidoFita",
+        "transLidoPilha", "transGravadoPilha", "botaoAdicionarTransicao", "entradaSentenca",
+        "botaoIniciarExecucao"
+    ], false);
 };
 
 const iniciarExecucao = () => {
@@ -237,13 +214,15 @@ const iniciarExecucao = () => {
         estado: dadosAutomato.estadoInicial,
         entrada: sentenca,
         pilha: [],
-        transicao: null
+        transicao: null,
+        concluida: false
     };
 
     historicoPassos = [];
 
     bloquearCamposAutomato();
     limparExibicao();
+    atualizarEstadoBotaoProximoPasso();
 };
 
 const gerarProximoPasso = () => {
@@ -252,57 +231,105 @@ const gerarProximoPasso = () => {
         return;
     }
 
+    if (execucao.concluida) {
+        alert("A análise já foi concluída. Use o botão 'Reiniciar Autômato' para começar uma nova execução.");
+        return;
+    }
+
     if (historicoPassos.length === 0) {
-        const passoInicial = {
+        historicoPassos.push({
             estado: execucao.estado,
             entrada: execucao.entrada,
             pilha: [...execucao.pilha],
             transicao: "Estado inicial"
-        };
-        historicoPassos.push(passoInicial);
+        });
     }
 
-    if (verificarAceitacao()) {
-        alert("SENTENÇA ACEITA!");
-        execucao.transicao = null;
-        adicionarPassoAoHistorico();
-        exibirExecucao();
-        return;
-    }
-
-    if (verificarRejeicao()) {
-        alert("SENTENÇA REJEITADA!");
-        execucao.transicao = null;
-        adicionarPassoAoHistorico();
-        exibirExecucao();
-        return;
-    }
-
-    const transicaoAplicavel = encontrarTransicaoAplicavel();
+    let transicaoAplicavel = encontrarTransicaoAplicavel();
 
     if (!transicaoAplicavel) {
-        alert("SENTENÇA REJEITADA!");
-        execucao.transicao = null;
-        adicionarPassoAoHistorico();
-        exibirExecucao();
-        return;
+        const estado = obterEstadoAtualExecucao();
+        for (const transicao of listaTransicoes) {
+            if (transicao.estadoAtual === estado.estado && transicao.lidoFita === "e" && 
+                verificarCondicaoPilha(transicao, estado.topoPilha)) {
+                transicaoAplicavel = transicao;
+                break;
+            }
+        }
+    }
+
+    if (!transicaoAplicavel) {
+        const entradaEstaVazia = execucao.entrada === "";
+        
+        if (entradaEstaVazia) {
+            execucao.transicao = null;
+            execucao.concluida = true;
+            adicionarPassoAoHistorico();
+            exibirExecucao();
+            desbloquearCamposAposExecucao();
+            alert(verificarAceitacao() ? "SENTENÇA ACEITA!" : "SENTENÇA REJEITADA!");
+            return;
+        } else {
+            const estado = obterEstadoAtualExecucao();
+            const proximoSymbolo = estado.entrada[0];
+            let transicaoTentada = null;
+            
+            for (const transicao of listaTransicoes) {
+                if (transicao.estadoAtual === estado.estado && transicao.lidoFita === proximoSymbolo &&
+                    !verificarCondicaoPilha(transicao, estado.topoPilha)) {
+                    transicaoTentada = transicao;
+                    break;
+                }
+            }
+            
+            if (transicaoTentada) {
+                execucao.transicao = { ...transicaoTentada, _tentativaFalhou: true };
+                adicionarPassoAoHistorico();
+                execucao.transicao = null;
+                exibirExecucao();
+            }
+            
+            const estadoAtualEhFinal = dadosAutomato.estadosFinais.includes(estado.estado);
+            if (!estadoAtualEhFinal) {
+                execucao.concluida = true;
+                exibirExecucao();
+                desbloquearCamposAposExecucao();
+                alert(transicaoTentada ? 
+                    `ERRO: Tentou ler "${proximoSymbolo}" mas nenhuma transição aplicável encontrada. SENTENÇA REJEITADA!` :
+                    "ERRO: Nenhuma transição aplicável e não está em estado final. SENTENÇA REJEITADA!");
+                return;
+            }
+            
+            if (!transicaoTentada) {
+                execucao.transicao = null;
+                adicionarPassoAoHistorico();
+            }
+            alert("Nenhuma transição aplicável. A entrada ainda não foi completamente lida.");
+            exibirExecucao();
+            return;
+        }
     }
 
     execucao.transicao = transicaoAplicavel;
-    adicionarPassoAoHistorico();
     aplicarTransicao(transicaoAplicavel);
+    adicionarPassoAoHistorico();
     execucao.transicao = null;
 
-    if (verificarAceitacao()) {
-        exibirExecucao();
-        alert("SENTENÇA ACEITA!");
-        return;
-    }
-
-    if (verificarRejeicao()) {
-        exibirExecucao();
-        alert("SENTENÇA REJEITADA!");
-        return;
+    const entradaEstaVazia = execucao.entrada === "";
+    
+    if (entradaEstaVazia) {
+        const transicaoEpsilonAplicavel = encontrarTransicaoAplicavel();
+        if (!transicaoEpsilonAplicavel) {
+            execucao.concluida = true;
+            exibirExecucao();
+            desbloquearCamposAposExecucao();
+            if (verificarAceitacao()) {
+                alert("SENTENÇA ACEITA!");
+            } else if (verificarRejeicao()) {
+                alert("SENTENÇA REJEITADA!");
+            }
+            return;
+        }
     }
 
     exibirExecucao();
@@ -313,14 +340,19 @@ const adicionarPassoAoHistorico = () => {
         return;
     }
 
-    const passo = {
+    historicoPassos.push({
         estado: execucao.estado,
         entrada: execucao.entrada,
         pilha: [...execucao.pilha],
         transicao: execucao.transicao ? formatarTransicao(execucao.transicao) : "Nenhuma transição aplicável"
-    };
+    });
+};
 
-    historicoPassos.push(passo);
+const atualizarEstadoBotaoProximoPasso = () => {
+    const botaoProximoPasso = document.getElementById("botaoProximoPasso");
+    if (botaoProximoPasso) {
+        botaoProximoPasso.disabled = !execucao || execucao.concluida;
+    }
 };
 
 const limparExibicao = () => {
@@ -337,21 +369,13 @@ const limparExibicao = () => {
 const resetarExecucao = () => {
     execucao = null;
     historicoPassos = [];
-    desbloquearCamposAutomato();
     limparExibicao();
+    atualizarEstadoBotaoProximoPasso();
+    desbloquearCamposAutomato();
 };
 
 document.getElementById("botaoIniciarExecucao").onclick = iniciarExecucao;
 document.getElementById("botaoProximoPasso").onclick = gerarProximoPasso;
 document.getElementById("botaoResetar").onclick = () => {
-    limparMemoria();
-    document.getElementById("entradaAlfabeto").value = "";
-    document.getElementById("listaEstados").value = "";
-    document.getElementById("estadoInicial").value = "";
-    document.getElementById("listaEstadosFinais").value = "";
-    document.getElementById("alfabetoPilha").value = "";
-    document.getElementById("entradaSentenca").value = "";
-    atualizarTabelaTransicoes();
-    desbloquearCamposAutomato();
-    limparExibicao();
+    resetarExecucao();
 };

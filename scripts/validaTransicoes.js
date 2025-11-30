@@ -50,8 +50,9 @@ const validarTransicao = (estadoAtual, proximoEstado, lidoFita, lidoPilha, grava
 };
 
 const adicionarTransicao = () => {
-    if (execucao !== null) {
-        alert("Não é possível adicionar transições durante a execução. Use o botão Resetar para reiniciar.");
+    const execucaoEmAndamento = execucao !== null && !execucao.concluida;
+    if (execucaoEmAndamento) {
+        alert("Não é possível adicionar transições durante a execução. Aguarde a conclusão ou use o botão Reiniciar Autômato.");
         return;
     }
     if (!dadosAutomato) {
@@ -105,7 +106,7 @@ const atualizarTabelaTransicoes = () => {
 
     listaTransicoes.forEach((transicao, index) => {
         const tr = document.createElement("tr");
-        const execucaoEmAndamento = execucao !== null;
+        const execucaoEmAndamento = execucao !== null && !execucao.concluida;
         const botaoDesabilitado = execucaoEmAndamento ? "disabled" : "";
         
         let lidoFitaExibido = "";
@@ -143,8 +144,9 @@ const atualizarTabelaTransicoes = () => {
 };
 
 const removerTransicao = (indice) => {
-    if (execucao !== null) {
-        alert("Não é possível remover transições durante a execução. Use o botão Resetar para reiniciar.");
+    const execucaoEmAndamento = execucao !== null && !execucao.concluida;
+    if (execucaoEmAndamento) {
+        alert("Não é possível remover transições durante a execução. Aguarde a conclusão ou use o botão Reiniciar Autômato.");
         return;
     }
     if (indice >= 0 && indice < listaTransicoes.length) {

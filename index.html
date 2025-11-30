@@ -11,7 +11,7 @@
 <body class="bg-light">
 
 <div class="container py-4">
-    
+
     <h2 class="mb-3">Simulador de Autômato de Pilha (AP)</h2>
 
     <div class="card mb-4">
@@ -84,14 +84,17 @@
         <div class="card-body">
 
             <div class="row mb-3">
-                <div class="col-md-6">
-                    <input id="entradaSentenca" class="form-control" placeholder="Digite a sentença">
+                <div class="col-md-3">
+                    <input id="entradaSentenca" class="form-control border-success" placeholder="Digite a sentença">
                 </div>
                 <div class="col-md-3">
                     <button id="botaoIniciarExecucao" class="btn btn-primary w-100">Iniciar Execução</button>
                 </div>
                 <div class="col-md-3">
                     <button id="botaoProximoPasso" class="btn btn-warning w-100">Próximo Passo</button>
+                </div>
+                <div class="col-md-3">
+                    <button id="botaoResetar" class="btn btn-danger w-100">Reiniciar Autômato</button>
                 </div>
             </div>
 
@@ -103,7 +106,7 @@
                         <tbody>
                             <tr><th class="w-50">Estado Atual:</th><td id="exEstado" class="fw-bold"></td></tr>
                             <tr><th>Entrada Restante:</th><td id="exEntrada" class="font-monospace"></td></tr>
-                            <tr><th>Transição Aplicada:</th><td id="exTransicao" class="font-monospace"></td></tr>
+                            <tr><th>Última Transição Aplicada:</th><td id="exTransicao" class="font-monospace"></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -146,9 +149,7 @@
             </div>
         </div>
     </div>
-
-    <button id="botaoResetar" class="btn btn-secondary w-100">Resetar Tudo</button>
-
+   
 </div>
 
 <script src="scripts/global.js"></script>

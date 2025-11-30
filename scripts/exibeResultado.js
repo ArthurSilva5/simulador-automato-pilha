@@ -33,14 +33,17 @@ const exibirEstadoAtual = () => {
         return;
     }
 
-    elementoEstado.textContent = execucao.estado;
+    const estadoAtual = execucao.estado;
+    elementoEstado.textContent = estadoAtual;
     
-    const entradaVazia = execucao.entrada === "";
-    elementoEntrada.textContent = entradaVazia ? "ε" : execucao.entrada;
+    const entradaAtual = execucao.entrada;
+    const entradaVazia = entradaAtual === "";
+    elementoEntrada.textContent = entradaVazia ? "ε" : entradaAtual;
     
     if (historicoPassos.length > 0) {
         const ultimoPasso = historicoPassos[historicoPassos.length - 1];
-        elementoTransicao.textContent = ultimoPasso.transicao;
+        const transicaoAplicada = ultimoPasso.transicao;
+        elementoTransicao.textContent = transicaoAplicada;
     } else {
         elementoTransicao.textContent = "Estado inicial";
     }
@@ -61,14 +64,16 @@ const exibirTabelaPassos = () => {
         const tr = document.createElement("tr");
         const numeroPasso = index + 1;
         const estadoAtual = passo.estado;
-        const entradaRestante = passo.entrada === "" ? "ε" : passo.entrada;
-        const pilhaFormatada = formatarPilha(passo.pilha);
+        const entradaRestante = passo.entrada;
+        const entradaRestanteFormatada = entradaRestante === "" ? "ε" : entradaRestante;
+        const pilhaAtual = passo.pilha;
+        const pilhaFormatada = formatarPilha(pilhaAtual);
         const transicaoAplicada = passo.transicao;
         
         tr.innerHTML = `
             <td>${numeroPasso}</td>
             <td class="fw-bold">${estadoAtual}</td>
-            <td class="font-monospace">${entradaRestante}</td>
+            <td class="font-monospace">${entradaRestanteFormatada}</td>
             <td class="font-monospace">${pilhaFormatada}</td>
             <td class="font-monospace small">${transicaoAplicada}</td>
         `;
@@ -85,16 +90,18 @@ const exibirResultadoFinal = () => {
         return;
     }
 
-    if (verificarAceitacao()) {
-        elementoResultado.textContent = "✓ SENTENÇA ACEITA";
-        elementoResultado.className = "text-center fw-bold text-success";
-        return;
-    }
+    if (execucao.concluida) {
+        if (verificarAceitacao()) {
+            elementoResultado.textContent = "✓ SENTENÇA ACEITA";
+            elementoResultado.className = "text-center fw-bold text-success";
+            return;
+        }
 
-    if (verificarRejeicao()) {
-        elementoResultado.textContent = "✗ SENTENÇA REJEITADA";
-        elementoResultado.className = "text-center fw-bold text-danger";
-        return;
+        if (verificarRejeicao()) {
+            elementoResultado.textContent = "✗ SENTENÇA REJEITADA";
+            elementoResultado.className = "text-center fw-bold text-danger";
+            return;
+        }
     }
 
     elementoResultado.textContent = "";
@@ -113,4 +120,8 @@ const exibirExecucao = () => {
 
     exibirTabelaPassos();
     exibirResultadoFinal();
+    
+    if (typeof atualizarEstadoBotaoProximoPasso === 'function') {
+        atualizarEstadoBotaoProximoPasso();
+    }
 };
